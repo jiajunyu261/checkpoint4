@@ -91,91 +91,98 @@ module processor(
     input [31:0] data_readRegA, data_readRegB;
 
     /* YOUR CODE STARTS HERE */
-	 
-	 
-	 reg [0:9]Q[0:31];//column:row
-	 
-	 initial 
-	 begin
-		
-		Q[5'b00000]=10'b1000000000;//alu 0
-		Q[5'b00101]=10'b1010000000;
-		Q[5'b00111]=10'b0110000010;//last 0
-		Q[5'b01000]=10'b1010000001;
-	 
-	 end
-	 
-	 wire [0:9]control;
-	 
-	 wire [31:0]w0;//se output
-	 wire [31:0]w1;//alu input2
-	 wire w2, w3, w4;//alu output ==/</overflow
-	 wire w13,w14; //actually overflow
-	 
-	 
-	 wire [31:0]w5;//pc+1
-	 wire w6, w7, w8;
-	 
-	 wire [4:0]w12;
-	 assign w12 = 5'b11110;
-	 
-	 wire [31:0]w9;//data_writereg
-	 wire [31:0]w10,w11;//mux 123
-	 
-	 of overflow(q_imem[31:27], q_imem[6:2], w13);
-	 and (w14, w13, w4);
-	 
-	 assign control = Q[q_imem[31:27]];
-	 
-	 assign ctrl_readRegA = q_imem[21:17];//rs
-	 
-	 assign data = data_readRegB;
-	 
-	 assign wren = control[8];
-	 
-	 assign ctrl_writeEnable = control[0];
-	 
-	 
-	 //assign ctrl_writeReg = q_imem[26:22];
-	 
-	 //reg
-	 MUX mux5_1(ctrl_readRegB, q_imem[16:12], q_imem[26:22], control[1]);//rt
-	 defparam mux5_1.width = 5;
+  
+  
+  reg [0:9]Q[0:31];//column:row
+  
+  initial 
+  begin
+  
+  Q[5'b00000]=10'b1000000000;//alu 0
+  Q[5'b00101]=10'b1010000000;
+  Q[5'b00111]=10'b0110000010;//last 0
+  Q[5'b01000]=10'b1010000001;
+  
+  end
+  
+  wire [0:9]control;
+  
+  wire [31:0]w0;//se output
+  wire [31:0]w1;//alu input2
+  wire w2, w3, w4;//alu output ==/</overflow
+  wire w13,w14; //actually overflow
+  
+  wire w16;//add 00000
+  
+  wire [31:0]w5;//pc+1
+  wire w6, w7, w8;
+  
+  wire [4:0]w12,w15;//w15 alu input
+  assign w12 = 5'b11110;
+  
+  wire [31:0]w9;//data_writereg
+  wire [31:0]w10,w11;//mux 123
+  
+  of overflow(q_imem[31:27], q_imem[6:2], w13);
+  and (w14, w13, w4);
+  
+  assign control = Q[q_imem[31:27]];
+  
+  assign ctrl_readRegA = q_imem[21:17];//rs
+  
+  assign data = data_readRegB;
+  
+  assign wren = control[8];
+  
+  assign ctrl_writeEnable = control[0];
+  
+  
+  //assign ctrl_writeReg = q_imem[26:22];
+  
+  //reg
+  MUX mux5_1(ctrl_readRegB, q_imem[16:12], q_imem[26:22], control[1]);//rt
+  defparam mux5_1.width = 5;
 
-	  MUX mux5_2(ctrl_writeReg, q_imem[26:22], w12, w14);//ctrl_writeReg
-	 defparam mux5_2.width = 5;
-	 
-	 //alu
-	 sign_extend se32(w0, q_imem[16:0]);
-	 
-	 MUX mux32_1(w1, data_readRegB, w0, control[2]);
-	 defparam mux32_1.width = 32;
-	 
-	 alu alu123(data_readRegA, w1, q_imem[6:2], q_imem[11:7], address_dmem, w2, w3, w4);
-	 
-	
-	 
-	 //dmem
-	 MUX mux32_2(w9, address_dmem, q_dmem, control[9]);
-	 defparam mux32_2.width = 32;
-	 
-	 MUX mux32_3(w10, 32'd1, 32'd3, q_imem[2]);
-	 defparam mux32_3.width = 32;
-	 
-	 MUX mux32_4(w11, w10, 32'd2, q_imem[27]);
-	 defparam mux32_4.width = 32;
-	 
-	 MUX mux32_5(data_writeReg, w9, w11, w14);
-	 defparam mux32_5.width = 32;
-	 
-	 
-	 //pc
-	 alu alu456({20'b0,address_imem}, 32'b1, 5'b00000, 5'b00000, w5, w6, w7, w8);
-	 
-	 genvar i;
-	 generate for (i = 0; i < 12; i = i + 1) begin: loop0
-		dffe_reg d1(address_imem[i], w5[i],clock, 1'b1, reset);
-	 end
-	 endgenerate
+  MUX mux5_2(ctrl_writeReg, q_imem[26:22], w12, w14);//ctrl_writeReg
+  defparam mux5_2.width = 5;
+  
+  or(w16, q_imem[31], q_imem[30], q_imem[29], q_imem[28], q_imem[27]);
+  
+  MUX mux5_3(w15, q_imem[6:2], 5'b00000, w16);
+  defparam mux5_2.width = 5;
+  
+  
+  //alu
+  sign_extend se32(w0, q_imem[16:0]);
+  
+  MUX mux32_1(w1, data_readRegB, w0, control[2]);
+  defparam mux32_1.width = 32;
+  
+  alu alu123(data_readRegA, w1, w15, q_imem[11:7], address_dmem, w2, w3, w4);
+  
+ 
+  
+  //dmem
+  MUX mux32_2(w9, address_dmem, q_dmem, control[9]);
+  defparam mux32_2.width = 32;
+  
+  MUX mux32_3(w10, 32'd1, 32'd3, q_imem[2]);
+  defparam mux32_3.width = 32;
+  
+  MUX mux32_4(w11, w10, 32'd2, q_imem[27]);
+  defparam mux32_4.width = 32;
+  
+  MUX mux32_5(data_writeReg, w9, w11, w14);
+  defparam mux32_5.width = 32;
+  
+  
+  //pc
+  alu alu456({20'b0,address_imem}, 32'b1, 5'b00000, 5'b00000, w5, w6, w7, w8);
+  
+  genvar i;
+  generate for (i = 0; i < 12; i = i + 1) begin: loop0
+  dffe_reg d1(address_imem[i], w5[i],clock, 1'b1, reset);
+  end
+  endgenerate
 
 endmodule
